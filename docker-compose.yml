@@ -1,0 +1,153 @@
+services:
+  zookeeper-1:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_SERVER_ID: 1
+      ZOOKEEPER_SERVERS: zookeeper-1:2888:3888;zookeeper-2:2888:3888;zookeeper-3:2888:3888
+
+  zookeeper-2:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_SERVER_ID: 2
+      ZOOKEEPER_SERVERS: zookeeper-1:2888:3888;zookeeper-2:2888:3888;zookeeper-3:2888:3888
+
+  zookeeper-3:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_SERVER_ID: 3
+      ZOOKEEPER_SERVERS: zookeeper-1:2888:3888;zookeeper-2:2888:3888;zookeeper-3:2888:3888
+
+  kafka-1:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper-1
+      - zookeeper-2
+      - zookeeper-3
+    ports:
+      - "9092:9092"
+      - "9997:9999"  # JMX port
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper-1:2181,zookeeper-2:2181,zookeeper-3:2181
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,INTERNAL://0.0.0.0:19092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://127.0.0.1:9092,INTERNAL://kafka-1:19092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,INTERNAL:PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      # JMX settings
+      KAFKA_JMX_PORT: 9999
+      KAFKA_JMX_HOSTNAME: kafka
+      # Enable JMX exporter
+      KAFKA_OPTS: "-javaagent:/etc/kafka/jmx_exporter/jmx_prometheus_javaagent.jar=7071:/etc/kafka/jmx_exporter/kafka-jmx.yml"
+    # FIX: Corrected indentation and paths for volumes
+    volumes:
+      - ./config/kafka-exporter/jmx_prometheus_javaagent.jar:/etc/kafka/jmx_exporter/jmx_prometheus_javaagent.jar
+      - ./config/kafka-exporter/kafka-jmx.yml:/etc/kafka/jmx_exporter/kafka-jmx.yml
+
+  kafka-2:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper-1
+      - zookeeper-2
+      - zookeeper-3
+    ports:
+      - "9093:9092"
+      - "9998:9999"  # JMX port
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper-1:2181,zookeeper-2:2181,zookeeper-3:2181
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,INTERNAL://0.0.0.0:19092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://127.0.0.1:9093,INTERNAL://kafka-2:19092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,INTERNAL:PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      # JMX settings
+      KAFKA_JMX_PORT: 9999
+      KAFKA_JMX_HOSTNAME: kafka
+      # Enable JMX exporter
+      KAFKA_OPTS: "-javaagent:/etc/kafka/jmx_exporter/jmx_prometheus_javaagent.jar=7071:/etc/kafka/jmx_exporter/kafka-jmx.yml"
+    # FIX: Corrected indentation and paths for volumes
+    volumes:
+      - ./config/kafka-exporter/jmx_prometheus_javaagent.jar:/etc/kafka/jmx_exporter/jmx_prometheus_javaagent.jar
+      - ./config/kafka-exporter/kafka-jmx.yml:/etc/kafka/jmx_exporter/kafka-jmx.yml
+
+  kafka-3:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper-1
+      - zookeeper-2
+      - zookeeper-3
+    ports:
+      - "9094:9092"
+      - "9999:9999"  # JMX port
+    environment:
+      KAFKA_BROKER_ID: 3
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper-1:2181,zookeeper-2:2181,zookeeper-3:2181
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,INTERNAL://0.0.0.0:19092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://127.0.0.1:9094,INTERNAL://kafka-3:19092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,INTERNAL:PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      # JMX settings
+      KAFKA_JMX_PORT: 9999
+      KAFKA_JMX_HOSTNAME: kafka
+      # Enable JMX exporter
+      KAFKA_OPTS: "-javaagent:/etc/kafka/jmx_exporter/jmx_prometheus_javaagent.jar=7071:/etc/kafka/jmx_exporter/kafka-jmx.yml"
+    # FIX: Corrected indentation and paths for volumes
+    volumes:
+      - ./config/kafka-exporter/jmx_prometheus_javaagent.jar:/etc/kafka/jmx_exporter/jmx_prometheus_javaagent.jar
+      - ./config/kafka-exporter/kafka-jmx.yml:/etc/kafka/jmx_exporter/kafka-jmx.yml
+
+  kafka-exporter:
+      image: danielqsj/kafka-exporter:latest
+      container_name: kafka-exporter
+      depends_on:
+        - kafka-1
+        - kafka-2
+        - kafka-3
+      ports:
+        - "9308:9308"
+      command:
+        - "--kafka.server=kafka-1:19092"
+        - "--kafka.server=kafka-2:19092"
+        - "--kafka.server=kafka-3:19092"
+        - "--web.listen-address=:9308"
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus:/etc/prometheus
+      - prometheus_data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.console.libraries=/usr/share/prometheus/console_libraries
+      - --web.console.templates=/usr/share/prometheus/consoles
+    depends_on:
+      - kafka-exporter
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ./config/grafana/datasources:/etc/grafana/provisioning/datasources
+      - ./config/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+
+volumes:
+  prometheus_data:
+  grafana_data:
