@@ -8,7 +8,7 @@ bootstrap_servers = 'localhost:9092,localhost:9093,localhost:9094'
 topic_name = 'sample-topic'
 group_id = 'sample-group'
 
-base_path = "keys/artifacts"
+base_path = "/Users/ARBINURHAKIM/Desktop/kafka-assignment-2/keys/artifacts"
 ca_file = f"{base_path}/ca.crt"
 cert_file = f"{base_path}/python-consumer.crt"
 key_file = f"{base_path}/python-consumer.key"
